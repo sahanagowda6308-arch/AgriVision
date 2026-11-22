@@ -140,37 +140,35 @@ async function fetchCropRecommendation(lat, lon) {
         const avgTemp =
             temps.reduce((a, b) => a + b, 0) / temps.length;
 
-        const totalRain =
-            rain.reduce((a, b) => a + b, 0);
+        const totalRain =  rain.reduce((a, b) => a + b, 0);
+   
+let recommendations = [];
 
-        let recommendations = [];
-
-        if (avgTemp >= 24 && totalRain >= 50) {
-            recommendations = [
-                "Rice (ಭತ್ತ)",
-                "Maize (ಮೆಕ್ಕೆಜೋಳ)",
-                "Finger Millet (ರಾಗಿ)"
-            ];
-        } else if (avgTemp >= 22 && totalRain >= 20) {
-            recommendations = [
-                "Maize (ಮೆಕ್ಕೆಜೋಳ)",
-                "Groundnut (ಕಡಲೆಕಾಯಿ)",
-                "Pulses (ಬೇಳೆಕಾಳುಗಳು)"
-            ];
-        } else if (avgTemp >= 22 && totalRain < 20) {
-            recommendations = [
-                "Finger Millet (ರಾಗಿ)",
-                "Pearl Millet (ಸಜ್ಜೆ)",
-                "Pigeon Pea (ತೊಗರಿ)"
-            ];
-        } else {
-            recommendations = [
-                "Chickpea (ಕಡಲೆ)",
-                "Mustard (ಸಾಸಿವೆ)",
-                "Other locally suitable seasonal crops"
-            ];
-        }
-
+if (avgTemp >= 25 && totalRain >= 100) {
+    recommendations = [
+        "Rice (ಅಕ್ಕಿ)",
+        "Maize (ಮೆಕ್ಕೆಜೋಳ)",
+        "Finger Millet (ರಾಗಿ)"
+    ];
+} else if (avgTemp >= 22 && totalRain >= 50) {
+    recommendations = [
+        "Maize (ಮೆಕ್ಕೆಜೋಳ)",
+        "Groundnut (ಕಡಲೆಕಾಯಿ)",
+        "Pulses (ಬೇಳೆಕಾಳುಗಳು)"
+    ];
+} else if (avgTemp >= 20 && totalRain >= 20) {
+    recommendations = [
+        "Finger Millet (ರಾಗಿ)",
+        "Pearl Millet (ಸಜ್ಜೆ)",
+        "Pigeon Pea (ತೊಗರಿ)"
+    ];
+} else {
+    recommendations = [
+        "Chickpea (ಕಡಲೆ)",
+        "Mustard (ಸಾಸಿವೆ)",
+        "Other locally suitable seasonal crops"
+    ];
+}
         crop.innerHTML =
             "<h3>🌾 Recommended Crops</h3>" +
             "<p><b>Average Temperature:</b> " +
