@@ -124,9 +124,7 @@ async function fetchCropRecommendation(lat, lon) {
 
     crop.innerHTML = "Analyzing weather for crop recommendations...";
 
-    const url =
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_mean,precipitation_sum&forecast_days=7&timezone=auto`;
-
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_mean,precipitation_sum&forecast_days=7&time
     try {
         const response = await fetch(url);
 
