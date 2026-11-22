@@ -119,42 +119,82 @@ async function fetchWeather(lat, lon) {
         weather.innerHTML = "Unable to load weather.";
     }
 }
-
 async function fetchCropRecommendation(lat, lon) {
     const crop = document.getElementById("crop");
 
-    crop.innerHTML = "Analyzing local weather...";
+    crop.innerHTML = "Analyzing weather for crop recommendations...";
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&daily=precipitation_sum&timezone=auto`;
+    const url =
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_mean,precipitation_sum&forecast_days=7&timezone=auto`;
 
     try {
         const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Weather data unavailable");
+        }
+
         const data = await response.json();
 
-        const temp = data.current.temperature_2m;
-        const rainfall = data.daily.precipitation_sum[0];
+        const temps = data.daily.temperature_2m_mean;
+        const rain = data.daily.precipitation_sum;
 
-        let recommendation;
+        const avgTemp =
+            temps.reduce((a, b) => a + b, 0) / temps.length;
 
-        if (temp >= 25 && rainfall >= 5) {
-            recommendation = "Paddy (Rice), subject to soil and water suitability.";
-        } else if (temp >= 24 && rainfall < 5) {
-            recommendation = "Ragi or Pulses, subject to local conditions.";
-        } else if (temp >= 18 && temp < 24) {
-            recommendation = "Maize or Pulses, subject to local conditions.";
+        const totalRain =
+            rain.reduce((a, b) => a + b, 0);
+
+        let recommendations = [];
+
+        if (avgTemp >= 24 && totalRain >= 50) {
+            recommendations = [
+                "Rice (ಭತ್ತ)",
+                "Maize (ಮೆಕ್ಕೆಜೋಳ)",
+                "Finger Millet (ರಾಗಿ)"
+            ];
+        } else if (avgTemp >= 22 && totalRain >= 20) {
+            recommendations = [
+                "Maize (ಮೆಕ್ಕೆಜೋಳ)",
+                "Groundnut (ಕಡಲೆಕಾಯಿ)",
+                "Pulses (ಬೇಳೆಕಾಳುಗಳು)"
+            ];
+        } else if (avgTemp >= 22 && totalRain < 20) {
+            recommendations = [
+                "Finger Millet (ರಾಗಿ)",
+                "Pearl Millet (ಸಜ್ಜೆ)",
+                "Pigeon Pea (ತೊಗರಿ)"
+            ];
         } else {
-            recommendation = "Please consult a local agricultural expert.";
+            recommendations = [
+                "Chickpea (ಕಡಲೆ)",
+                "Mustard (ಸಾಸಿವೆ)",
+                "Other locally suitable seasonal crops"
+            ];
         }
 
         crop.innerHTML =
-            "<b>Suggested Crops:</b><br>" + recommendation +
-            "<br><br>Temperature: " + temp + " °C" +
-            "<br>Rainfall: " + rainfall + " mm";
+            "<h3>🌾 Recommended Crops</h3>" +
+            "<p><b>Average Temperature:</b> " +
+            avgTemp.toFixed(1) + " °C</p>" +
+            "<p><b>7-Day Rainfall:</b> " +
+            totalRain.toFixed(1) + " mm</p>" +
+            "<h4>Suitable Crop Suggestions:</h4>" +
+            "<ul>" +
+            recommendations.map(item =>
+                "<li>" + item + "</li>"
+            ).join("") +
+            "</ul>" +
+            "<p><small>Preliminary weather-based suggestions. " +
+            "Check local season, soil, irrigation and " +
+            "agricultural guidance before planting.</small></p>";
 
     } catch (error) {
-        crop.innerHTML = "Unable to load crop recommendations.";
+        crop.innerHTML =
+            "Unable to load crop recommendations. Please try again.";
     }
-}
+            }
+    
      function speak(message) {
     const speech = new SpeechSynthesisUtterance(message);
     speech.lang = message.includes("ಕೃಷಿ") ? "kn-IN" : "en-IN";
