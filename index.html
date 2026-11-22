@@ -54,6 +54,10 @@ button {
 <button onclick="getLocation()">📍 Detect My Location</button>
 
 <p id="result">Your location will appear here.</p>
+    <div class="card">
+    <h2>🌦️ Live Weather Information</h2>
+    <p id="weather">Weather information will appear here.</p>
+    </div>
 
 <button onclick="speak('Welcome to AgriVision')">
 🔊 English Voice
@@ -76,6 +80,7 @@ function getLocation() {
                 result.innerHTML =
                     "Latitude: " + position.coords.latitude +
                     "<br>Longitude: " + position.coords.longitude;
+                fetchWeather(position.coords.latitude, position.coords.longitude);
             },
             function() {
                 result.innerHTML =
@@ -86,7 +91,25 @@ function getLocation() {
         result.innerHTML = "Location is not supported.";
     }
 }
+async function fetchWeather(lat, lon) {
+    const weather = document.getElementById("weather");
+    weather.innerHTML = "Loading weather...";
 
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const current = data.current;
+
+        weather.innerHTML =
+            "Temperature: " + current.temperature_2m + " °C<br>" +
+            "Humidity: " + current.relative_humidity_2m + " %<br>" +
+            "Rainfall: " + current.precipitation + " mm";
+    } catch (error) {
+        weather.innerHTML = "Unable to load weather.";
+    }
+}
 function speak(message) {
     const speech = new SpeechSynthesisUtterance(message);
     speech.lang = message.includes("ಕೃಷಿ") ? "kn-IN" : "en-IN";
