@@ -150,8 +150,8 @@ async function fetchCropRecommendation(lat, lon) {
     const crop = document.getElementById("crop");
 
     crop.innerHTML = "Analyzing weather for crop recommendations...";
-
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_mean,precipitation_sum&forecast_days=7&time
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_mean,precipitation_sum&forecast_days=7&timezone=auto`;
+    
     try {
         const response = await fetch(url);
 
@@ -216,6 +216,7 @@ if (avgTemp >= 25 && totalRain >= 100) {
         crop.innerHTML =
             "Unable to load crop recommendations. Please try again.";
     }
+}
       function speakRecommendation(language) {
 
     const cropItems = document.querySelectorAll("#crop li");
