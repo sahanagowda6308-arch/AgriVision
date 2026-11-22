@@ -179,7 +179,7 @@ function getLocation() {
 }
 
 // Option 2: manual place name
-async function searchPlace() {
+async function searchPlaceOld() {
     const result = document.getElementById("result");
     const name = document.getElementById("place").value.trim();
 
@@ -211,7 +211,56 @@ async function searchPlace() {
         result.textContent = "Unable to search the place. Check your internet and try again.";
     }
 }
+async function searchPlace() {
+    const result = document.getElementById("result");
+    const typed = document.getElementById("place").value.trim();
 
+    if (typed === "") {
+        result.textContent = "Please type a village, town or city name.";
+        return;
+    }
+
+    const parts = typed.split(",").map(function (s) { return s.trim(); })
+                       .filter(function (s) { return s !== ""; });
+    const name = parts[0];
+    const extra = parts.slice(1).map(function (s) { return s.toLowerCase(); });
+
+    result.textContent = "Searching for " + name + "...";
+
+    const tries = [name];
+    if (/u$/i.test(name) && name.length > 4) tries.push(name.slice(0, -1));
+
+    try {
+        let found = null;
+
+        for (const t of tries) {
+            const url = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                encodeURIComponent(t) + "&count=10&language=en&format=json";
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Search failed");
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                found = data.results.find(function (p) {
+                    const text = ((p.admin1 || "") + " " + (p.admin2 || "") + " " + (p.country || "")).toLowerCase();
+                    return extra.some(function (e) { return text.includes(e); });
+                }) || data.results[0];
+                break;
+            }
+        }
+
+        if (!found) {
+            result.textContent = "Place not found. Type only the place name (like Arkalgud) or the nearest big town (like Hassan).";
+            return;
+        }
+
+        const label = "📍 " + found.name + (found.admin1 ? ", " + found.admin1 : "") + (found.country ? ", " + found.country : "");
+        await runForLocation(found.latitude, found.longitude, label);
+    } catch (error) {
+        console.error("Search error:", error);
+        result.textContent = "Unable to search the place. Check your internet and try again.";
+    }
+}
 document.getElementById("place").addEventListener("keydown", function (e) {
     if (e.key === "Enter") searchPlace();
 });
