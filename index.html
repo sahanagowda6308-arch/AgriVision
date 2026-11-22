@@ -74,23 +74,20 @@ button {
 </div>
 
 <script>
-
 function getLocation() {
     const result = document.getElementById("result");
 
     if (!window.isSecureContext) {
-        result.innerHTML =
-            "Please open this website using HTTPS.";
+        result.textContent = "Please open this website using HTTPS.";
         return;
     }
 
     if (!navigator.geolocation) {
-        result.innerHTML =
-            "Location is not supported by this browser.";
+        result.textContent = "Location is not supported by this browser.";
         return;
     }
 
-    result.innerHTML = "Detecting your location...";
+    result.textContent = "Detecting your location... Please wait.";
 
     navigator.geolocation.getCurrentPosition(
         async function(position) {
@@ -106,29 +103,30 @@ function getLocation() {
         },
 
         function(error) {
+            console.error("Location error:", error);
+
             if (error.code === 1) {
-                result.innerHTML =
-                    "Location permission denied. Please allow location access.";
+                result.textContent =
+                    "Location permission denied. Allow location access in browser settings.";
             } else if (error.code === 2) {
-                result.innerHTML =
+                result.textContent =
                     "Location unavailable. Please turn on GPS.";
             } else if (error.code === 3) {
-                result.innerHTML =
+                result.textContent =
                     "Location request timed out. Please try again.";
             } else {
-                result.innerHTML =
+                result.textContent =
                     "Unable to detect location. Please try again.";
             }
         },
 
         {
-            enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 0
+            enableHighAccuracy: false,
+            timeout: 60000,
+            maximumAge: 60000
         }
     );
 }
-    
 async function fetchWeather(lat, lon) {
     const weather = document.getElementById("weather");
     weather.innerHTML = "Loading weather...";
