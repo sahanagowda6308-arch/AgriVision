@@ -58,7 +58,12 @@ button {
     <h2>🌦️ Live Weather Information</h2>
     <p id="weather">Weather information will appear here.</p>
     </div>
-
+<div class="card">
+    <h2>🌱 Automatic Crop Recommendation</h2>
+    <p id="crop">
+        Detect your location to get crop recommendations.
+    </p>
+</div>
 <button onclick="speak('Welcome to AgriVision')">
 🔊 English Voice
 </button>
@@ -81,6 +86,10 @@ function getLocation() {
                     "Latitude: " + position.coords.latitude +
                     "<br>Longitude: " + position.coords.longitude;
                 fetchWeather(position.coords.latitude, position.coords.longitude);
+                fetchCropRecommendation(
+    position.coords.latitude,
+    position.coords.longitude
+);
             },
             function() {
                 result.innerHTML =
@@ -110,7 +119,43 @@ async function fetchWeather(lat, lon) {
         weather.innerHTML = "Unable to load weather.";
     }
 }
-function speak(message) {
+
+async function fetchCropRecommendation(lat, lon) {
+    const crop = document.getElementById("crop");
+
+    crop.innerHTML = "Analyzing local weather...";
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&daily=precipitation_sum&timezone=auto`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const temp = data.current.temperature_2m;
+        const rainfall = data.daily.precipitation_sum[0];
+
+        let recommendation;
+
+        if (temp >= 25 && rainfall >= 5) {
+            recommendation = "Paddy (Rice), subject to soil and water suitability.";
+        } else if (temp >= 24 && rainfall < 5) {
+            recommendation = "Ragi or Pulses, subject to local conditions.";
+        } else if (temp >= 18 && temp < 24) {
+            recommendation = "Maize or Pulses, subject to local conditions.";
+        } else {
+            recommendation = "Please consult a local agricultural expert.";
+        }
+
+        crop.innerHTML =
+            "<b>Suggested Crops:</b><br>" + recommendation +
+            "<br><br>Temperature: " + temp + " °C" +
+            "<br>Rainfall: " + rainfall + " mm";
+
+    } catch (error) {
+        crop.innerHTML = "Unable to load crop recommendations.";
+    }
+}
+     function speak(message) {
     const speech = new SpeechSynthesisUtterance(message);
     speech.lang = message.includes("ಕೃಷಿ") ? "kn-IN" : "en-IN";
     window.speechSynthesis.speak(speech);
