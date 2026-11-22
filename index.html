@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriVision</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f7ed;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+}
+header {
+    background: #247a38;
+    color: white;
+    padding: 25px;
+    border-radius: 15px;
+}
+.card {
+    background: white;
+    padding: 25px;
+    margin-top: 25px;
+    border-radius: 15px;
+}
+button {
+    background: #247a38;
+    color: white;
+    border: none;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    margin: 8px;
+}
+#result {
+    color: #247a38;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🌱 AgriVision</h1>
+<p>Smart Farming, Better Future</p>
+</header>
+
+<div class="card">
+<h2>Welcome Farmer!</h2>
+<p>Get smart crop recommendations with the help of technology.</p>
+
+<button onclick="getLocation()">📍 Detect My Location</button>
+
+<p id="result">Your location will appear here.</p>
+
+<button onclick="speak('Welcome to AgriVision')">
+🔊 English Voice
+</button>
+
+<button onclick="speak('ಕೃಷಿವಿಷನ್ ಗೆ ಸ್ವಾಗತ')">
+🔊 Kannada Voice
+</button>
+</div>
+
+<script>
+function getLocation() {
+    const result = document.getElementById("result");
+
+    if (navigator.geolocation) {
+        result.innerHTML = "Finding your location...";
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                result.innerHTML =
+                    "Latitude: " + position.coords.latitude +
+                    "<br>Longitude: " + position.coords.longitude;
+            },
+            function() {
+                result.innerHTML =
+                    "Location unavailable. Please allow location access.";
+            }
+        );
+    } else {
+        result.innerHTML = "Location is not supported.";
+    }
+}
+
+function speak(message) {
+    const speech = new SpeechSynthesisUtterance(message);
+    speech.lang = message.includes("ಕೃಷಿ") ? "kn-IN" : "en-IN";
+    window.speechSynthesis.speak(speech);
+}
+</script>
+
+</body>
+</html>
