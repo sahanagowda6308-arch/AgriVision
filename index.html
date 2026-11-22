@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgriVision</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
 body { font-family: Arial, sans-serif; background: #f0f7ed; text-align: center; padding: 20px; margin: 0; }
 header { background: #247a38; color: white; padding: 25px; border-radius: 15px; }
@@ -12,6 +12,7 @@ header { background: #247a38; color: white; padding: 25px; border-radius: 15px; 
 button { background: #247a38; color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 16px; margin: 8px; }
 input { font-size: 16px; padding: 12px; width: 70%; max-width: 280px; border: 1px solid #247a38; border-radius: 8px; }
 #result { color: #247a38; font-weight: bold; }
+#map { height: 300px; border-radius: 12px; margin-bottom: 15px; background: #e8f5e9; }
 </style>
 </head>
 <body>
@@ -32,7 +33,7 @@ input { font-size: 16px; padding: 12px; width: 70%; max-width: 280px; border: 1p
 <button onclick="searchPlace()">🔍 Search Location</button>
 
 <p><b>or tap your village on the map</b></p>
-<div id="map" style="height:300px; border-radius:12px; margin-bottom:15px;"></div>
+<div id="map"></div>
 
 <p id="result">Your location will appear here.</p>
 
@@ -50,8 +51,17 @@ input { font-size: 16px; padding: 12px; width: 70%; max-width: 280px; border: 1p
 <button onclick="speakRecommendation('kn')">🔊 Kannada Voice</button>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
+let map = null;
+let marker = null;
+
+// Shows any hidden error on the page
+window.addEventListener("error", function (e) {
+    const r = document.getElementById("result");
+    if (r) r.textContent = "Error: " + e.message;
+});
+
 const cropDB = [
     { name: "Rice",          kn: "ಅಕ್ಕಿ",        temp: [22, 35], rain: [30, 250], ph: [5.5, 7.5], soils: ["clay", "loamy"],            seasons: ["kharif"] },
     { name: "Maize",         kn: "ಮೆಕ್ಕೆಜೋಳ",    temp: [21, 32], rain: [15, 100], ph: [5.8, 7.5], soils: ["loamy", "sandy", "clay"],   seasons: ["kharif", "rabi"] },
@@ -131,12 +141,15 @@ function scoreCrops(avgTemp, totalRain, season, soil) {
     });
 }
 
-// Runs map update + weather + soil + crop recommendation for any location
 async function runForLocation(lat, lon, label) {
-    if (typeof map !== "undefined") {
-        map.setView([lat, lon], Math.max(map.getZoom(), 12));
-        if (marker) map.removeLayer(marker);
-        marker = L.marker([lat, lon]).addTo(map);
+    try {
+        if (map) {
+            map.setView([lat, lon], Math.max(map.getZoom(), 12));
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lon]).addTo(map);
+        }
+    } catch (e) {
+        console.error("Map update error:", e);
     }
 
     const result = document.getElementById("result");
@@ -148,7 +161,6 @@ async function runForLocation(lat, lon, label) {
     await fetchCropRecommendation(lat, lon);
 }
 
-// Option 1: GPS
 function getLocation() {
     const result = document.getElementById("result");
 
@@ -189,7 +201,6 @@ function getLocation() {
     );
 }
 
-// Option 2: type a place name
 async function searchPlace() {
     const result = document.getElementById("result");
     const typed = document.getElementById("place").value.trim();
@@ -232,4 +243,192 @@ async function searchPlace() {
         }
 
         if (!found) {
-            const url2 = "https://geocoding-api.open-meteo.com/v1/sea
+            const url2 = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                encodeURIComponent(first) + "&count=1&language=en&format=json";
+            const response2 = await fetch(url2);
+            if (response2.ok) {
+                const data2 = await response2.json();
+                if (data2.results && data2.results.length > 0) {
+                    const p = data2.results[0];
+                    found = { lat: p.latitude, lon: p.longitude, label: p.name + (p.admin1 ? ", " + p.admin1 : "") };
+                }
+            }
+        }
+
+        if (!found) {
+            result.textContent = "Place not found. Search the nearest town, then tap your village on the map.";
+            return;
+        }
+
+        await runForLocation(found.lat, found.lon, "📍 " + found.label + " (tap the map to pick your exact village)");
+    } catch (error) {
+        console.error("Search error:", error);
+        result.textContent = "Search error: " + error.message;
+    }
+}
+
+document.getElementById("place").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") searchPlace();
+});
+
+async function fetchWeather(lat, lon) {
+    const weather = document.getElementById("weather");
+    weather.innerHTML = "Loading weather...";
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const current = data.current;
+
+        weather.innerHTML =
+            "Temperature: " + current.temperature_2m + " °C<br>" +
+            "Humidity: " + current.relative_humidity_2m + " %<br>" +
+            "Rainfall: " + current.precipitation + " mm";
+    } catch (error) {
+        weather.innerHTML = "Unable to load weather.";
+    }
+}
+
+async function fetchCropRecommendation(lat, lon) {
+    const crop = document.getElementById("crop");
+    crop.innerHTML = "Analyzing weather and soil for your location...";
+
+    const season = detectSeason();
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_mean,precipitation_sum&forecast_days=7&timezone=auto`;
+
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Weather data unavailable");
+        }
+
+        const data = await response.json();
+        const temps = data.daily.temperature_2m_mean;
+        const rain = data.daily.precipitation_sum;
+
+        const avgTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
+        const totalRain = rain.reduce((a, b) => a + b, 0);
+
+        const soil = await fetchSoil(lat, lon);
+        const top3 = scoreCrops(avgTemp, totalRain, season, soil).slice(0, 3);
+
+        const listHtml = top3.map(function (r) {
+            return '<li data-en="' + r.crop.name + '" data-kn="' + r.crop.kn + '">' +
+                r.crop.name + " (" + r.crop.kn + ") - " + r.percent + "% match</li>";
+        }).join("");
+
+        let soilHtml;
+        if (soil) {
+            soilHtml = "<p><b>Detected Soil:</b> " + soil.texture +
+                " (clay " + soil.clay.toFixed(0) + "%, sand " + soil.sand.toFixed(0) + "%)" +
+                (soil.ph !== undefined ? ", pH " + soil.ph.toFixed(1) : "") + "</p>";
+        } else {
+            soilHtml = "<p><small>Soil data could not be detected right now, " +
+                "so suggestions use weather and season only.</small></p>";
+        }
+
+        crop.innerHTML =
+            "<h3>🌾 Recommended Crops</h3>" +
+            "<p><b>Average Temperature:</b> " + avgTemp.toFixed(1) + " °C</p>" +
+            "<p><b>7-Day Rainfall:</b> " + totalRain.toFixed(1) + " mm</p>" +
+            "<p><b>Detected Season:</b> " + season + "</p>" +
+            soilHtml +
+            "<h4>Top 3 Crop Suggestions:</h4>" +
+            "<ul>" + listHtml + "</ul>" +
+            "<p><small>Preliminary suggestions from satellite-based soil estimates and weather. " +
+            "Check local conditions and agricultural guidance before planting.</small></p>";
+
+    } catch (error) {
+        crop.innerHTML = "Unable to load crop recommendations. Please try again.";
+    }
+}
+
+function speakRecommendation(language) {
+
+    const cropItems = document.querySelectorAll("#crop li");
+
+    if (cropItems.length === 0) {
+        alert("Please detect, search or tap your location first.");
+        return;
+    }
+
+    const crops = [];
+    cropItems.forEach(function (item) {
+        crops.push(language === "kn" ? item.dataset.kn : item.dataset.en);
+    });
+
+    let message;
+
+    if (language === "kn") {
+        message = "ನಮಸ್ಕಾರ ರೈತ ಮಿತ್ರರೇ. " +
+            "ನಿಮ್ಮ ಪ್ರದೇಶದ ಹವಾಮಾನದ ಆಧಾರದ ಮೇಲೆ " +
+            "ಶಿಫಾರಸು ಮಾಡಲಾದ ಬೆಳೆಗಳು: " +
+            crops.join(", ") +
+            ". ಕೃಷಿ ಮಾಡುವ ಮೊದಲು ಸ್ಥಳೀಯ ಕೃಷಿ ತಜ್ಞರ ಸಲಹೆ ಪಡೆಯಿರಿ.";
+    } else {
+        message = "Hello farmer. Based on your local weather conditions, " +
+            "the recommended crops are: " +
+            crops.join(", ") +
+            ". Please consult a local agricultural expert before planting.";
+    }
+
+    if (!("speechSynthesis" in window)) {
+        alert("Voice is not supported in this browser.");
+        return;
+    }
+
+    const langCode = language === "kn" ? "kn-IN" : "en-IN";
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(function (v) {
+        return v.lang.replace("_", "-").toLowerCase() === langCode.toLowerCase();
+    }) || voices.find(function (v) {
+        return v.lang.toLowerCase().startsWith(language);
+    });
+
+    if (language === "kn" && !voice) {
+        alert("Kannada voice is not installed on this device. Install Kannada text-to-speech in your phone settings.");
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance(message);
+    speech.lang = langCode;
+    if (voice) speech.voice = voice;
+    speech.rate = 0.9;
+    speech.pitch = 1;
+
+    window.speechSynthesis.speak(speech);
+}
+
+if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged = function () {
+        window.speechSynthesis.getVoices();
+    };
+}
+
+// Map is started last. If it fails, everything above still works.
+try {
+    if (typeof L === "undefined") throw new Error("Map library not loaded");
+
+    map = L.map("map").setView([15.3, 75.7], 6);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    map.on("click", function (e) {
+        runForLocation(e.latlng.lat, e.latlng.lng, "📍 Selected on map");
+    });
+} catch (err) {
+    console.error("Map error:", err);
+    document.getElementById("map").innerHTML =
+        "<p style='padding:20px'>Map could not load on this network. Use GPS or search instead.</p>";
+}
+</script>
+
+</body>
+</html>
