@@ -74,32 +74,61 @@ button {
 </div>
 
 <script>
+
 function getLocation() {
     const result = document.getElementById("result");
 
-    if (navigator.geolocation) {
-        result.innerHTML = "Finding your location...";
-
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                result.innerHTML =
-                    "Latitude: " + position.coords.latitude +
-                    "<br>Longitude: " + position.coords.longitude;
-                fetchWeather(position.coords.latitude, position.coords.longitude);
-                fetchCropRecommendation(
-    position.coords.latitude,
-    position.coords.longitude
-);
-            },
-            function() {
-                result.innerHTML =
-                    "Location unavailable. Please allow location access.";
-            }
-        );
-    } else {
-        result.innerHTML = "Location is not supported.";
+    if (!window.isSecureContext) {
+        result.innerHTML =
+            "Please open this website using HTTPS.";
+        return;
     }
+
+    if (!navigator.geolocation) {
+        result.innerHTML =
+            "Location is not supported by this browser.";
+        return;
+    }
+
+    result.innerHTML = "Detecting your location...";
+
+    navigator.geolocation.getCurrentPosition(
+        async function(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            result.innerHTML =
+                "Latitude: " + lat.toFixed(5) +
+                "<br>Longitude: " + lon.toFixed(5);
+
+            await fetchWeather(lat, lon);
+            await fetchCropRecommendation(lat, lon);
+        },
+
+        function(error) {
+            if (error.code === 1) {
+                result.innerHTML =
+                    "Location permission denied. Please allow location access.";
+            } else if (error.code === 2) {
+                result.innerHTML =
+                    "Location unavailable. Please turn on GPS.";
+            } else if (error.code === 3) {
+                result.innerHTML =
+                    "Location request timed out. Please try again.";
+            } else {
+                result.innerHTML =
+                    "Unable to detect location. Please try again.";
+            }
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 20000,
+            maximumAge: 0
+        }
+    );
 }
+    
 async function fetchWeather(lat, lon) {
     const weather = document.getElementById("weather");
     weather.innerHTML = "Loading weather...";
