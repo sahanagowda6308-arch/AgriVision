@@ -64,12 +64,12 @@ button {
         Detect your location to get crop recommendations.
     </p>
 </div>
-<button onclick="speak('Welcome to AgriVision')">
-🔊 English Voice
+<button onclick="speakRecommendation('en')">
+    🔊 English Voice
 </button>
 
-<button onclick="speak('ಕೃಷಿವಿಷನ್ ಗೆ ಸ್ವಾಗತ')">
-🔊 Kannada Voice
+<button onclick="speakRecommendation('kn')">
+    🔊 Kannada Voice
 </button>
 </div>
 
@@ -189,13 +189,54 @@ if (avgTemp >= 25 && totalRain >= 100) {
         crop.innerHTML =
             "Unable to load crop recommendations. Please try again.";
     }
-            }
-    
-     function speak(message) {
+      function speakRecommendation(language) {
+
+    const cropItems = document.querySelectorAll("#crop li");
+
+    if (cropItems.length === 0) {
+        alert("Please detect your location first.");
+        return;
+    }
+
+    let crops = [];
+
+    cropItems.forEach(item => {
+        let name = item.innerText;
+
+        if (language === "kn") {
+            let kannada = name.match(/\(([^)]+)\)/);
+            crops.push(kannada ? kannada[1] : name);
+        } else {
+            crops.push(name.replace(/\s*\([^)]*\)/g, ""));
+        }
+    });
+
+    let message;
+
+    if (language === "kn") {
+        message = "ನಮಸ್ಕಾರ ರೈತ ಮಿತ್ರರೇ. " +
+            "ನಿಮ್ಮ ಪ್ರದೇಶದ ಹವಾಮಾನದ ಆಧಾರದ ಮೇಲೆ " +
+            "ಶಿಫಾರಸು ಮಾಡಲಾದ ಬೆಳೆಗಳು: " +
+            crops.join(", ") +
+            ". ಕೃಷಿ ಮಾಡುವ ಮೊದಲು ಸ್ಥಳೀಯ ಕೃಷಿ ತಜ್ಞರ ಸಲಹೆ ಪಡೆಯಿರಿ.";
+    } else {
+        message = "Hello farmer. Based on your local weather conditions, " +
+            "the recommended crops are: " +
+            crops.join(", ") +
+            ". Please consult a local agricultural expert before planting.";
+    }
+
+    window.speechSynthesis.cancel();
+
     const speech = new SpeechSynthesisUtterance(message);
-    speech.lang = message.includes("ಕೃಷಿ") ? "kn-IN" : "en-IN";
+
+    speech.lang = language === "kn" ? "kn-IN" : "en-IN";
+    speech.rate = 0.9;
+    speech.pitch = 1;
+
     window.speechSynthesis.speak(speech);
-}
+}      
+    
 </script>
 
 </body>
