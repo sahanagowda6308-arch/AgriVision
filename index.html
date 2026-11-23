@@ -76,7 +76,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent2);outlin
   <h2>3. Soil and season</h2>
   <div class="row" id="sstats"></div>
   <p class="msg" id="soilnote"></p>
-  <button class="alt" data-go="2">◄ Back</button><button data-go="4">Show crops</button>
+  <p style="margin:10px 0 4px"><b>Soil Health Card values (optional, gives better crops)</b></p>
+  <div class="row">
+    <input type="text" id="iN" placeholder="N (nitrogen)" inputmode="numeric">
+    <input type="text" id="iP" placeholder="P (phosphorus)" inputmode="numeric">
+    <input type="text" id="iK" placeholder="K (potassium)" inputmode="numeric">
+    <input type="text" id="iPH" placeholder="pH" inputmode="decimal">
+  </div>
+  <button class="alt" data-go="2">◄ Back</button><button id="showCrops">Show crops</button>
 </section>
 
 <section class="card page" id="p4">
@@ -198,11 +205,15 @@ async function getPlace(lat,lon){
   }catch(e){S.district="";S.place=lat.toFixed(3)+", "+lon.toFixed(3);}
 }
 async function getWeather(lat,lon){
-  const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`;
+  const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum,temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean&past_days=23&forecast_days=7&timezone=auto`;
   const d=await (await fetch(u)).json();
   const mx=d.daily.temperature_2m_max,mn=d.daily.temperature_2m_min;
   S.temp=mx.map((v,i)=>(v+mn[i])/2).reduce((a,b)=>a+b)/mx.length;
-  S.rain=d.daily.precipitation_sum.reduce((a,b)=>a+(b||0),0);
+  const pr=d.daily.precipitation_sum.map(v=>v||0);
+  S.rain=pr.slice(-7).reduce((a,b)=>a+b,0);
+  S.rain30=pr.reduce((a,b)=>a+b,0);
+  const hm=d.daily.relative_humidity_2m_mean.filter(v=>v!=null);
+  S.hum=hm.length?hm.reduce((a,b)=>a+b,0)/hm.length:70;
   S.elev=d.elevation;
 }
 async function getSoil(lat,lon){
@@ -271,8 +282,31 @@ function buildCrops(){
   $("local").innerHTML=html;
   const shown=new Set(names);
   S.top=CROPS.filter(c=>!c.plant&&!shown.has(c.id)).map(c=>({c,p:fit(c)})).sort((a,b)=>b.p-a.p).slice(0,3);
-  $("results").innerHTML=`<h3 style="margin:16px 0 0">Best for this ${S.season} season</h3>`+S.top.map(x=>card(x.c,x.p)).join("");
+  const rulesHTML=`<h3 style="margin:16px 0 0">Best for this ${S.season} season</h3>`+S.top.map(x=>card(x.c,x.p)).join("");
+  $("results").innerHTML=rulesHTML;
+  // If the farmer typed soil values and crop_model.json exists, use the trained model
+  const N=$("iN").value,P=$("iP").value,K=$("iK").value,PH=$("iPH").value;
+  if(N&&P&&K&&PH){
+    predictCrops({N:+N,P:+P,K:+K,temperature:S.temp,humidity:S.hum,ph:+PH,rainfall:S.rain30})
+      .then(top=>{
+        S.modelTop=top;
+        $("results").innerHTML=`<h3 style="margin:16px 0 0">Best for your soil (trained model)</h3>`+
+          top.map(t=>`<div class="crop"><h3>${cap(t.crop)} – ${t.score}% match</h3></div>`).join("")+
+          `<p class="note">These come from a model trained on a general India crop dataset. Confirm with your KVK.</p>`;
+      })
+      .catch(()=>{$("results").innerHTML=rulesHTML+`<p class="note">Trained model file (crop_model.json) not found, so rule-based results are shown.</p>`;});
+  }
 }
+
+/* ===== Trained model (reads crop_model.json) ===== */
+let CROP_MODEL=null;
+async function predictCrops(input){
+  if(!CROP_MODEL){const r=await fetch("crop_model.json");if(!r.ok)throw new Error("no model");CROP_MODEL=await r.json();}
+  const m=CROP_MODEL,row=m.features.map(f=>Number(input[f])),total=new Array(m.classes.length).fill(0);
+  for(const tr of m.trees){let n=0;while(tr.l[n]!==-1){n=row[tr.f[n]]<=tr.t[n]?tr.l[n]:tr.r[n];}tr.v[n].forEach((p,i)=>total[i]+=p);}
+  return total.map((s,i)=>({crop:m.classes[i],score:Math.round(s/m.trees.length*100)})).sort((a,b)=>b.score-a.score).slice(0,3);
+}
+$("showCrops").onclick=()=>{buildCrops();go(4);};
 
 /* ===== Voice ===== */
 function speak(lang){
