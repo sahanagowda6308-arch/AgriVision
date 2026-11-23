@@ -1,296 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AgriVision</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
-body{font-family:Arial,sans-serif;background:#f0f7ed;text-align:center;margin:0;padding:16px}
-header{background:linear-gradient(135deg,#14532d,#2e9e4f);color:#fff;padding:18px;border-radius:18px}
-header h1{margin:0}
-.card{background:#fff;padding:18px;margin-top:16px;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
-button{background:#247a38;color:#fff;border:0;padding:13px 18px;border-radius:10px;font-size:16px;margin:6px}
-button.alt{background:#fff;color:#247a38;border:2px solid #247a38}
-input{font-size:16px;padding:12px;width:62%;border:1px solid #247a38;border-radius:10px}
-.step{display:none}.step.on{display:block}
-#map{height:280px;border-radius:12px;margin:10px 0;background:#e8f5e9}
-#result{color:#247a38;font-weight:bold}
-.days{display:flex;gap:6px;overflow-x:auto;padding:4px}
-.day{flex:1;min-width:64px;background:#e8f5e9;border-radius:12px;padding:8px 4px;font-size:13px}
-ul{list-style:none;padding:0}
-li{margin:12px 0;text-align:left}
-small{color:#444}
-.dash{background:linear-gradient(135deg,#8d6e63,#a1887f);color:#fff;border-radius:18px;padding:14px;margin:12px 0;text-align:left}
-.dash small{color:#fff}
-.rings{display:flex;justify-content:space-around;margin-top:12px}
-.ring{font-size:11px;text-align:center}
-.big{background:#fff;border-radius:14px;padding:10px;margin:6px 0;box-shadow:0 2px 8px #0002}
-.nut{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #eee;font-size:12px;text-align:left}
-.ic{width:30px;height:30px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;flex:none}
-.nb{flex:1;height:6px;background:#e0e0e0;border-radius:3px}
-.nb i{display:block;height:6px;border-radius:3px;background:#14532d}
-.kit{display:flex;justify-content:center;gap:6px}
-.tube{flex:1;max-width:110px;border-radius:10px;padding:6px 4px;font-size:10px;color:#222}
-.tube div{padding:4px 1px;margin:2px 0;border-radius:4px;background:rgba(255,255,255,.5)}
-.tube div.on{background:#fff;font-weight:bold;outline:2px solid #222}
-.grow{background:linear-gradient(135deg,#2e7d32,#66bb6a);color:#fff;border-radius:14px;padding:12px;margin-bottom:8px}
-.grow small{color:#fff}
-.gbar{display:flex;gap:3px;margin:8px 0 4px}
-.gbar span{flex:1;font-size:10px;padding:4px 0;border-radius:6px;background:rgba(255,255,255,.3);text-align:center}
-.gbar span.cur{background:#fff;color:#2e7d32;font-weight:bold}
+/* ===== CHANGE COLOURS HERE ===== */
+:root{
+  --bg1:#0f3d2e;      /* page background, top */
+  --bg2:#2f7d4f;      /* page background, bottom */
+  --card:#f3f8e8;     /* soft leaf-green card (not white) */
+  --ink:#1b2a1f;
+  --accent:#1f7a3f;
+  --accent2:#e0a526;  /* sunflower gold */
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Noto Sans Kannada",sans-serif;color:var(--ink);
+  background:linear-gradient(170deg,var(--bg1),var(--bg2)) fixed;
+  /* PICTURE: replace the line above with this (put bg.jpg in the same folder):
+     background:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)),url("bg.jpg") center/cover fixed; */
+}
+header{padding:22px 16px 6px;text-align:center;color:#fff}
+header h1{margin:0;font-size:1.9rem}
+header p{margin:4px 0 0;opacity:.85}
+main{max-width:560px;margin:12px auto 40px;padding:0 12px}
+.card{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.page{display:none}.page.on{display:block}
+h2{margin:0 0 10px;font-size:1.25rem}
+input[type=text]{width:100%;padding:12px;border:2px solid #b9cfa8;border-radius:12px;font-size:1rem;background:#fbfdf5}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 16px;background:var(--accent);color:#fff;margin:6px 6px 0 0}
+button.alt{background:transparent;color:var(--accent);border:2px solid var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+#map{height:260px;border-radius:12px;margin-top:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.stat{flex:1 1 120px;background:#e3eed0;border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:1.3rem}
+.crop{background:linear-gradient(135deg,#2e8b4f,#5fb36b);color:#fff;border-radius:14px;padding:12px 14px;margin-top:12px}
+.crop.local{background:linear-gradient(135deg,#8a5a1b,#c68a2c)}
+.crop h3{margin:0 0 6px;font-size:1.1rem}
+.stages{display:flex;gap:4px;margin:6px 0}
+.stages span{flex:1;text-align:center;font-size:.75rem;padding:5px 0;border-radius:8px;background:rgba(255,255,255,.25)}
+.stages span:first-child{background:#fff;color:#1b2a1f;font-weight:600}
+.fert{font-size:.92rem;margin:6px 2px 0}
+.note{font-size:.82rem;opacity:.8;margin-top:12px}
+.localbox{background:#fff3d6;border-radius:12px;padding:10px 12px;margin-top:6px}
+.msg{font-size:.9rem;margin-top:8px;min-height:1.2em}
 </style>
 </head>
 <body>
-<header><h1>🌱 AgriVision</h1><div id="prog">Step 1 of 4</div></header>
+<header>
+  <h1>🌾 AgriVision</h1>
+  <p>Crop suggestions for your farm</p>
+</header>
+<main>
 
-<!-- STEP 1: LOCATION -->
-<div class="step on card">
-<svg viewBox="0 0 300 100" width="100%" style="max-width:320px"><rect width="300" height="100" rx="14" fill="#d9f0ff"/><circle cx="250" cy="28" r="14" fill="#ffd54f"/><path d="M0 70Q80 40 160 65T300 60V100H0Z" fill="#66bb6a"/><path d="M0 85Q100 65 200 85T300 80V100H0Z" fill="#388e3c"/><text x="30" y="62" font-size="22">🌾🌾🌾</text></svg>
-<h2>Find your farm</h2>
-<button onclick="getLocation()">📍 Detect My Location</button>
-<p><b>or type your place</b></p>
-<input id="place" placeholder="Village / town / city">
-<button onclick="searchPlace()">🔍 Search</button>
-<p><b>or tap your village on the map</b></p>
-<div id="map"></div>
-<p id="result">Your location will appear here.</p>
-</div>
+<section class="card page on" id="p1">
+  <h2>1. Find your farm</h2>
+  <button id="gps">📍 Use my location</button>
+  <div style="margin-top:10px"><input type="text" id="q" placeholder="Type village or town, e.g. Chikkamagaluru"></div>
+  <button id="search" class="alt">Search place</button>
+  <div id="map"></div>
+  <div class="msg" id="msg1">Or tap on the map to choose your farm.</div>
+</section>
 
-<!-- STEP 2: WEATHER -->
-<div class="step card">
-<h2>🌦️ Weather Forecast</h2>
-<div class="big" id="today"></div>
-<h3>This week</h3>
-<div class="days" id="days"></div>
-<h3>Temperature °C (high / low)</h3><div class="big" id="chT"></div>
-<h3>Rain (mm)</h3><div class="big" id="chR"></div>
-<h3>Wind (km/h)</h3><div class="big" id="chW"></div>
-<button class="alt" onclick="show(1)">◀ Back</button><button onclick="show(3)">Next ▶ Soil</button>
-</div>
+<section class="card page" id="p2">
+  <h2>2. Weather and altitude</h2>
+  <p id="place"></p>
+  <div class="row" id="wstats"></div>
+  <button class="alt" data-go="1">◄ Back</button><button data-go="3">Next</button>
+</section>
 
-<!-- STEP 3: SOIL -->
-<div class="step card">
-<h2>🌍 Soil at your location</h2>
-<div class="dash" id="dash"></div>
-<div id="soilinfo"></div>
-<h3>Nutrient levels</h3>
-<div class="big" id="nuts"></div>
-<h3>Soil test kit view</h3>
-<div class="kit" id="kit"></div>
-<p><small>The nitrogen tube is an approximate guide from total nitrogen. Satellite data gives total nitrogen only. Phosphorus (P) and potassium (K) cannot be measured from a location. Get a free Soil Health Card from your nearest agriculture office for exact P and K.</small></p>
-<button class="alt" onclick="show(2)">◀ Back</button><button onclick="show(4)">Next ▶ Crops</button>
-</div>
+<section class="card page" id="p3">
+  <h2>3. Soil and season</h2>
+  <div class="row" id="sstats"></div>
+  <p class="msg" id="soilnote"></p>
+  <button class="alt" data-go="2">◄ Back</button><button data-go="4">Show crops</button>
+</section>
 
-<!-- STEP 4: CROPS + FERTILIZER -->
-<div class="step card">
-<h2>🌾 Recommended crops</h2>
-<p id="summary"></p>
-<ul id="crops"></ul>
-<button onclick="speak('en')">🔊 English</button><button onclick="speak('kn')">🔊 Kannada</button>
-<p><small>Fertilizer amounts are general recommended doses (Urea = 46% N, DAP = 18-46-0, MOP = 60% K₂O). Apply nitrogen in 2 to 3 parts. Confirm with your Soil Health Card or local Krishi Vigyan Kendra before use.</small></p>
-<button class="alt" onclick="show(3)">◀ Back</button><button onclick="show(1)">🔄 Start again</button>
-</div>
+<section class="card page" id="p4">
+  <h2>4. Recommended crops</h2>
+  <div id="line" style="text-align:center"></div>
+  <div id="local"></div>
+  <div id="results"></div>
+  <div style="text-align:center;margin-top:14px">
+    <button id="vEn">🔊 English</button><button id="vKn">🔊 Kannada</button>
+  </div>
+  <p class="note">Fertilizer amounts are general recommended doses (Urea = 46% N, DAP = 18-46-0, MOP = 60% K₂O). Apply nitrogen in 2 to 3 parts. Confirm with your Soil Health Card or local Krishi Vigyan Kendra before use.</p>
+  <button class="alt" data-go="3">◄ Back</button><button id="again">🔄 Start again</button>
+</section>
+
+</main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
-let map=null,marker=null;
-const $=id=>document.getElementById(id);
-window.addEventListener("error",e=>{$("result").textContent="Error: "+e.message;});
+/* ===== Crops grown traditionally in each district (add more any time) ===== */
+const LOCAL_CROPS = {
+  "chikkamagaluru":["Coffee","Arecanut","Pepper","Paddy"],
+  "kodagu":["Coffee","Pepper","Cardamom","Paddy"],
+  "hassan":["Coffee","Potato","Ragi","Coconut"],
+  "mandya":["Sugarcane","Paddy","Ragi"],
+  "mysuru":["Ragi","Cotton","Sugarcane"],
+  "shivamogga":["Arecanut","Paddy","Sugarcane"],
+  "dakshina kannada":["Coconut","Arecanut","Paddy"],
+  "udupi":["Paddy","Coconut"],
+  "uttara kannada":["Paddy","Arecanut","Coconut"],
+  "tumakuru":["Coconut","Ragi","Groundnut"],
+  "kolar":["Tomato","Ragi"],
+  "chitradurga":["Groundnut","Maize","Onion"],
+  "davanagere":["Maize","Arecanut","Ragi"],
+  "belagavi":["Sugarcane","Soybean","Sorghum"],
+  "dharwad":["Cotton","Sorghum","Chilli"],
+  "vijayapura":["Sorghum","Red gram"],
+  "kalaburagi":["Red gram","Sorghum","Bengal gram"],
+  "raichur":["Paddy","Cotton","Red gram"],
+  "ballari":["Paddy","Cotton","Chilli","Maize"],
+  "bidar":["Soybean","Red gram","Sugarcane"]
+};
+/* Other spellings of district names */
+const ALIAS = {"chikmagalur":"chikkamagaluru","chikkamagalur":"chikkamagaluru","coorg":"kodagu","shimoga":"shivamogga",
+  "mangalore":"dakshina kannada","bellary":"ballari","bijapur":"vijayapura","gulbarga":"kalaburagi","belgaum":"belagavi","tumkur":"tumakuru"};
 
-// n=name, kn=Kannada, t=temp range, r=7-day rain range, ph=pH range, s=soils, se=seasons, f=fertilizer N:P2O5:K2O kg/ha
-const cropDB=[
-{n:"Rice",kn:"ಅಕ್ಕಿ",t:[22,35],r:[30,250],ph:[5.5,7.5],s:["clay","loamy"],se:["kharif"],f:[100,50,50]},
-{n:"Maize",kn:"ಮೆಕ್ಕೆಜೋಳ",t:[21,32],r:[15,100],ph:[5.8,7.5],s:["loamy","sandy","clay"],se:["kharif","rabi"],f:[150,75,40]},
-{n:"Finger Millet",kn:"ರಾಗಿ",t:[20,30],r:[10,80],ph:[5,8.2],s:["loamy","sandy"],se:["kharif"],f:[50,40,25]},
-{n:"Pearl Millet",kn:"ಸಜ್ಜೆ",t:[25,35],r:[5,60],ph:[5.5,8],s:["sandy","loamy"],se:["kharif","summer"],f:[60,30,30]},
-{n:"Sorghum",kn:"ಜೋಳ",t:[22,32],r:[10,70],ph:[6,8.5],s:["clay","loamy"],se:["kharif","rabi"],f:[100,50,50]},
-{n:"Pigeon Pea",kn:"ತೊಗರಿ",t:[20,32],r:[10,80],ph:[5.5,7.5],s:["loamy","clay"],se:["kharif"],f:[25,50,25]},
-{n:"Green Gram",kn:"ಹೆಸರುಕಾಳು",t:[25,35],r:[10,70],ph:[6.2,7.2],s:["loamy","sandy"],se:["kharif","summer"],f:[25,50,25]},
-{n:"Groundnut",kn:"ಕಡಲೆಕಾಯಿ",t:[22,32],r:[10,70],ph:[5.9,7],s:["sandy","loamy"],se:["kharif","summer"],f:[25,50,25]},
-{n:"Chickpea",kn:"ಕಡಲೆ",t:[15,28],r:[0,30],ph:[6,8],s:["clay","loamy"],se:["rabi"],f:[25,50,25]},
-{n:"Mustard",kn:"ಸಾಸಿವೆ",t:[10,25],r:[0,25],ph:[6,7.5],s:["loamy","sandy"],se:["rabi"],f:[60,40,40]},
-{n:"Sunflower",kn:"ಸೂರ್ಯಕಾಂತಿ",t:[20,30],r:[5,60],ph:[6,7.5],s:["loamy","clay"],se:["rabi","summer"],f:[60,90,60]},
-{n:"Cotton",kn:"ಹತ್ತಿ",t:[21,35],r:[10,80],ph:[6,8],s:["clay","loamy"],se:["kharif"],f:[100,50,50]},
-{n:"Sugarcane",kn:"ಕಬ್ಬು",t:[22,35],r:[20,150],ph:[6,8],s:["loamy","clay"],se:["kharif","summer"],f:[250,100,125]}
+/* Crop database. t = temperature range C, w = water need (0 low, 1 medium, 2 high),
+   npk = kg per hectare (N, P2O5, K2O) */
+const CROPS = [
+ {id:"Maize",kn:"ಮೆಕ್ಕೆಜೋಳ",e:"🌽",t:[18,32],soil:["loam","clay"],w:1,s:["kharif","rabi"],d:100,npk:[150,75,40]},
+ {id:"Sorghum",kn:"ಜೋಳ",e:"🌾",t:[20,32],soil:["clay","loam"],w:0,s:["kharif","rabi"],d:110,npk:[100,50,50]},
+ {id:"Sunflower",kn:"ಸೂರ್ಯಕಾಂತಿ",e:"🌻",t:[20,30],soil:["loam","clay","sandy"],w:0,s:["rabi","summer","kharif"],d:100,npk:[60,90,60]},
+ {id:"Ragi",kn:"ರಾಗಿ",e:"🌾",t:[20,30],soil:["loam","sandy"],w:0,s:["kharif","rabi"],d:110,npk:[50,40,25]},
+ {id:"Paddy",kn:"ಭತ್ತ",e:"🌾",t:[22,34],soil:["clay","loam"],w:2,s:["kharif","rabi"],d:120,npk:[100,50,50]},
+ {id:"Groundnut",kn:"ಶೇಂಗಾ",e:"🥜",t:[22,32],soil:["sandy","loam"],w:0,s:["kharif","summer"],d:110,npk:[25,50,25]},
+ {id:"Red gram",kn:"ತೊಗರಿ",e:"🌱",t:[20,32],soil:["clay","loam"],w:0,s:["kharif"],d:160,npk:[25,50,25]},
+ {id:"Bengal gram",kn:"ಕಡಲೆ",e:"🌱",t:[15,28],soil:["clay","loam"],w:0,s:["rabi"],d:100,npk:[25,50,25]},
+ {id:"Cotton",kn:"ಹತ್ತಿ",e:"☁️",t:[21,32],soil:["clay","loam"],w:1,s:["kharif"],d:160,npk:[100,50,50]},
+ {id:"Soybean",kn:"ಸೋಯಾಬೀನ್",e:"🌱",t:[20,30],soil:["loam","clay"],w:1,s:["kharif"],d:95,npk:[30,60,40]},
+ {id:"Sugarcane",kn:"ಕಬ್ಬು",e:"🎋",t:[22,34],soil:["loam","clay"],w:2,s:["kharif","rabi","summer"],d:365,npk:[250,100,120]},
+ {id:"Chilli",kn:"ಮೆಣಸಿನಕಾಯಿ",e:"🌶️",t:[20,30],soil:["loam","clay"],w:1,s:["kharif","rabi"],d:150,npk:[100,50,50]},
+ {id:"Onion",kn:"ಈರುಳ್ಳಿ",e:"🧅",t:[15,28],soil:["loam","sandy"],w:1,s:["rabi","kharif"],d:120,npk:[100,50,50]},
+ {id:"Tomato",kn:"ಟೊಮೆಟೊ",e:"🍅",t:[18,28],soil:["loam","sandy"],w:1,s:["rabi","summer","kharif"],d:110,npk:[125,100,60]},
+ {id:"Potato",kn:"ಆಲೂಗಡ್ಡೆ",e:"🥔",t:[15,24],soil:["loam","sandy"],w:1,s:["kharif","rabi"],d:100,npk:[120,60,100]},
+ /* Plantation crops (perennial, any season, altitude matters) */
+ {id:"Coffee",kn:"ಕಾಫಿ",e:"☕",t:[15,29],soil:["loam","clay"],w:2,s:["all"],d:0,npk:[120,90,120],plant:true,elev:[600,1800],note:"Perennial. Needs shade trees and good drainage. Arabica grows best above 900 m, Robusta lower."},
+ {id:"Pepper",kn:"ಕಾಳುಮೆಣಸು",e:"🌿",t:[20,32],soil:["loam","clay"],w:2,s:["all"],d:0,npk:[100,40,140],plant:true,elev:[0,1200],note:"Perennial vine. Grown on shade trees in coffee and arecanut gardens."},
+ {id:"Arecanut",kn:"ಅಡಿಕೆ",e:"🌴",t:[20,32],soil:["loam","clay"],w:2,s:["all"],d:0,npk:[100,40,140],plant:true,elev:[0,1000],note:"Perennial palm. Needs regular water."},
+ {id:"Cardamom",kn:"ಏಲಕ್ಕಿ",e:"🌿",t:[15,28],soil:["loam"],w:2,s:["all"],d:0,npk:[75,75,150],plant:true,elev:[600,1500],note:"Perennial. Needs shade and high humidity."},
+ {id:"Coconut",kn:"ತೆಂಗು",e:"🥥",t:[22,34],soil:["loam","sandy","clay"],w:1,s:["all"],d:0,npk:[0.5,0.32,1.2],plant:true,perTree:true,elev:[0,900],note:"Perennial. Amounts below are per tree per year."}
 ];
+const SOILKN={clay:"ಜೇಡಿಮಣ್ಣು",loam:"ಗೋಡುಮಣ್ಣು",sandy:"ಮರಳು ಮಣ್ಣು"};
 
-function show(n){
-  document.querySelectorAll(".step").forEach((s,i)=>s.classList.toggle("on",i===n-1));
-  $("prog").textContent="Step "+n+" of 4";
-  window.scrollTo(0,0);
-  if(n===1&&map)map.invalidateSize();
-}
-const inR=(v,r)=>v>=r[0]&&v<=r[1];
-function season(){const m=new Date().getMonth()+1;return m>=6&&m<=10?"kharif":(m>=11||m<=3)?"rabi":"summer";}
+const S={lat:null,lon:null,place:"",district:"",temp:0,rain:0,elev:0,soil:"loam",season:"",top:[]};
+const $=id=>document.getElementById(id);
+function go(n){document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));$("p"+n).classList.add("on");scrollTo(0,0);if(n===1)setTimeout(()=>map.invalidateSize(),100);}
+document.addEventListener("click",e=>{const g=e.target.dataset&&e.target.dataset.go;if(g)go(+g);});
 
-async function fetchSoil(lat,lon){
-  const c=new AbortController(),t=setTimeout(()=>c.abort(),20000);
+/* ===== Map and location ===== */
+const map=L.map("map").setView([14.5,75.7],7);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+let marker=null;
+map.on("click",e=>pick(e.latlng.lat,e.latlng.lng));
+$("gps").onclick=()=>{
+  $("msg1").textContent="Finding your location...";
+  if(!navigator.geolocation){$("msg1").textContent="GPS is not available. Search for your place instead.";return;}
+  navigator.geolocation.getCurrentPosition(p=>pick(p.coords.latitude,p.coords.longitude),
+    ()=>$("msg1").textContent="Could not get GPS. Allow location access, or search for your place.",
+    {enableHighAccuracy:true,timeout:15000});
+};
+$("search").onclick=async()=>{
+  const q=$("q").value.trim();if(!q)return;
+  $("msg1").textContent="Searching...";
   try{
-    const u="https://rest.isric.org/soilgrids/v2.0/properties/query?lon="+lon+"&lat="+lat+"&property=clay&property=sand&property=phh2o&property=nitrogen&property=soc&depth=5-15cm&value=mean";
-    const r=await fetch(u,{signal:c.signal});if(!r.ok)throw 0;
-    const d=await r.json(),o={};
-    d.properties.layers.forEach(l=>{const f=(l.unit_measure&&l.unit_measure.d_factor)||10,v=l.depths[0].values.mean;if(v!=null)o[l.name]=v/f;});
-    if(o.clay==null||o.sand==null)return null;
-    o.tex=o.sand>=55?"sandy":o.clay>=35?"clay":"loamy";
-    return o;
-  }catch(e){return null}finally{clearTimeout(t)}
-}
+    const r=await (await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q="+encodeURIComponent(q))).json();
+    if(!r.length){$("msg1").textContent="Place not found. Try a nearby town.";return;}
+    pick(+r[0].lat,+r[0].lon);
+  }catch(e){$("msg1").textContent="No internet. Try again.";}
+};
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter")$("search").click();});
 
+async function pick(lat,lon){
+  S.lat=lat;S.lon=lon;
+  if(marker)marker.setLatLng([lat,lon]);else marker=L.marker([lat,lon]).addTo(map);
+  map.setView([lat,lon],11);
+  $("msg1").textContent="Reading weather, altitude and soil...";
+  try{
+    await Promise.all([getPlace(lat,lon),getWeather(lat,lon),getSoil(lat,lon)]);
+    S.season=season();
+    renderPages();go(2);
+  }catch(e){$("msg1").textContent="Could not load data. Check your internet and tap the map again.";}
+}
+async function getPlace(lat,lon){
+  try{
+    const d=await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lon}`)).json();
+    const a=d.address||{};
+    const name=(a.state_district||a.county||"").toLowerCase().replace(/ district$/,"").trim();
+    S.district=ALIAS[name]||name;
+    S.place=[a.village||a.town||a.city||a.suburb||"",a.state_district||a.county||"",a.state||""].filter(Boolean).join(", ");
+  }catch(e){S.district="";S.place=lat.toFixed(3)+", "+lon.toFixed(3);}
+}
 async function getWeather(lat,lon){
-  const u="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,relative_humidity_2m,precipitation,surface_pressure,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&hourly=soil_moisture_3_to_9cm&forecast_days=7&timezone=auto";
-  const r=await fetch(u);if(!r.ok)throw new Error("Weather unavailable");
-  return r.json();
+  const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`;
+  const d=await (await fetch(u)).json();
+  const mx=d.daily.temperature_2m_max,mn=d.daily.temperature_2m_min;
+  S.temp=mx.map((v,i)=>(v+mn[i])/2).reduce((a,b)=>a+b)/mx.length;
+  S.rain=d.daily.precipitation_sum.reduce((a,b)=>a+(b||0),0);
+  S.elev=d.elevation;
 }
-
-function score(avgT,rain,se,s){
-  const max=s?(s.phh2o!=null?5:4):3;
-  return cropDB.map(c=>{
-    let p=0;
-    if(inR(avgT,c.t))p++; if(inR(rain,c.r))p++; if(c.se.includes(se))p++;
-    if(s){if(c.s.includes(s.tex))p++; if(s.phh2o!=null&&inR(s.phh2o,c.ph))p++;}
-    return{c:c,p:p,pct:Math.round(p/max*100)};
-  }).sort((a,b)=>b.p-a.p||a.c.n.localeCompare(b.c.n));
-}
-
-const EMO={"Rice":"🌾","Maize":"🌽","Finger Millet":"🌾","Pearl Millet":"🌾","Sorghum":"🌾","Pigeon Pea":"🫘","Green Gram":"🫘","Groundnut":"🥜","Chickpea":"🫘","Mustard":"🌼","Sunflower":"🌻","Cotton":"🌿","Sugarcane":"🎋"};
-const DAYS={"Rice":135,"Maize":100,"Finger Millet":110,"Pearl Millet":82,"Sorghum":110,"Pigeon Pea":165,"Green Gram":65,"Groundnut":110,"Chickpea":105,"Mustard":115,"Sunflower":100,"Cotton":165,"Sugarcane":330};
-const SOILSVG='<svg viewBox="0 0 160 115" width="150"><polygon points="20,40 80,20 140,40 80,60" fill="#4caf50"/><polygon points="20,40 80,60 80,80 20,60" fill="#6d4c41"/><polygon points="80,60 140,40 140,60 80,80" fill="#4e342e"/><polygon points="20,62 80,82 80,100 20,80" fill="#8d6e63"/><polygon points="80,82 140,62 140,80 80,100" fill="#6d4c41"/><text x="78" y="16" font-size="16" text-anchor="middle">🌱</text><text x="26" y="58" font-size="8" fill="#fff">0.7 m</text><text x="26" y="78" font-size="8" fill="#fff">1.2 m</text></svg>';
-
-function ring(p,v,l,c){
-  return '<div class="ring"><svg viewBox="0 0 44 44" width="64"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="5"/><circle cx="22" cy="22" r="18" fill="none" stroke="'+c+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+(Math.min(100,p)*1.131)+' 113.1" transform="rotate(-90 22 22)"/><text x="22" y="25" text-anchor="middle" font-size="9" fill="#fff">'+v+'</text></svg><br>'+l+'</div>';
-}
-function nut(ch,col,name,rng,val,pct){
-  return '<div class="nut"><div class="ic" style="background:'+col+'">'+ch+'</div><div style="width:84px"><b>'+name+'</b></div><div style="width:58px">'+rng+'</div><div class="nb"><i style="width:'+(pct==null?0:Math.min(100,pct))+'%"></i></div><div style="width:66px;text-align:right"><b>'+val+'</b></div></div>';
-}
-function tube(name,col,lvl){
-  const L=["Surplus","Sufficient","Adequate","Deficient","Depleted"];
-  return '<div class="tube" style="background:'+col+'"><b>'+name+'</b>'+L.map((t,i)=>'<div'+(lvl===4-i?' class="on"':'')+'>'+(4-i)+' '+t+'</div>').join("")+'<div style="background:none;font-size:20px">'+(lvl==null?"?":"")+'</div></div>';
-}
-function chart(ser,cols,labs,fill){
-  const all=[].concat(...ser),mx=Math.max(...all,1),mn=Math.min(0,...all);
-  const X=i=>20+i*260/(labs.length-1),Y=v=>12+88*(1-(v-mn)/((mx-mn)||1));
-  let s='<svg viewBox="0 0 300 130" width="100%">';
-  ser.forEach((a,k)=>{
-    const pts=a.map((v,i)=>X(i)+","+Y(v)).join(" ");
-    if(fill)s+='<polygon points="'+X(0)+","+Y(mn)+" "+pts+" "+X(a.length-1)+","+Y(mn)+'" fill="'+cols[k]+'" opacity=".25"/>';
-    s+='<polyline points="'+pts+'" fill="none" stroke="'+cols[k]+'" stroke-width="2.5"/>';
-    a.forEach((v,i)=>{s+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3" fill="'+cols[k]+'"/><text x="'+X(i)+'" y="'+(Y(v)-6)+'" font-size="8" text-anchor="middle">'+Math.round(v)+'</text>';});
-  });
-  labs.forEach((l,i)=>{s+='<text x="'+X(i)+'" y="124" font-size="9" text-anchor="middle" fill="#555">'+l+'</text>';});
-  return s+"</svg>";
-}
-
-function render(w,s){
-  const c=w.current,d=w.daily,h=w.hourly||{};
-  const hr=parseInt(c.time.slice(11,13))||0;
-  const emo=mm=>mm>=5?"🌧️":mm>=1?"🌦️":"☀️";
-  const labs=d.time.map(t=>new Date(t).toLocaleDateString("en-IN",{weekday:"short"}));
-
-  // Page 2: weather dashboard
-  $("today").innerHTML='<div style="font-size:40px">'+emo(d.precipitation_sum[0])+' <b>'+Math.round(c.temperature_2m)+'°C</b></div>💨 '+c.wind_speed_10m+' km/h &nbsp; 💧 '+c.relative_humidity_2m+'% &nbsp; ⏲️ '+Math.round(c.surface_pressure)+' hPa';
-  $("days").innerHTML=d.time.map((t,i)=>'<div class="day"><b>'+labs[i]+'</b><br>'+emo(d.precipitation_sum[i])+'<br>'+Math.round(d.temperature_2m_max[i])+'°/'+Math.round(d.temperature_2m_min[i])+'°<br><small>☔ '+(d.precipitation_probability_max?d.precipitation_probability_max[i]:0)+'%</small></div>').join("");
-  $("chT").innerHTML=chart([d.temperature_2m_max,d.temperature_2m_min],["#ef6c00","#1e88e5"],labs,false);
-  $("chR").innerHTML=chart([d.precipitation_sum],["#039be5"],labs,true);
-  $("chW").innerHTML=chart([d.wind_speed_10m_max],["#43a047"],labs,true);
-
-  // Page 3: soil dashboard
-  const sm=h.soil_moisture_3_to_9cm?h.soil_moisture_3_to_9cm[hr]:null,smp=sm!=null?sm*100:null;
-  const ph=s&&s.phh2o!=null?s.phh2o:null,N=s&&s.nitrogen!=null?s.nitrogen:null,oc=s&&s.soc!=null?s.soc:null;
-  $("dash").innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center">'+SOILSVG+'<div style="flex:1;min-width:150px"><b>Soil analysis</b>'+(ph!=null?' <span style="background:#c62828;border-radius:6px;padding:2px 6px;font-size:12px">pH '+ph.toFixed(1)+'</span>':"")+'<p style="margin:8px 0 2px;font-size:12px">Soil moisture (root zone)</p><div style="background:rgba(255,255,255,.3);border-radius:6px;height:10px"><div style="width:'+(smp==null?0:Math.min(100,smp/40*100))+'%;height:10px;border-radius:6px;background:#a5d6a7"></div></div><small>'+(smp==null?"not available":smp.toFixed(0)+"% (scale 0-40%)")+'</small></div></div><div class="rings">'+ring(c.surface_pressure/12,Math.round(c.surface_pressure),"Pressure hPa","#fff")+ring(c.wind_speed_10m*3,c.wind_speed_10m,"Wind km/h","#a5d6a7")+ring(c.relative_humidity_2m,c.relative_humidity_2m+"%","Humidity","#80deea")+'</div>';
-  $("soilinfo").innerHTML=s?"<p><b>Soil type:</b> "+s.tex+" (clay "+s.clay.toFixed(0)+"%, sand "+s.sand.toFixed(0)+"%)</p>":"<p>Soil data could not be loaded right now.</p>";
-  $("nuts").innerHTML=nut("N","#00897b","Nitrogen","1–2.5",N==null?"–":N.toFixed(2)+" g/kg",N==null?null:N/3*100)
-    +nut("pH","#1565c0","Acidity","5.5–7.5",ph==null?"–":ph.toFixed(1),ph==null?null:ph/9*100)
-    +nut("P","#8d6e63","Phosphorus","soil test","needs test",null)
-    +nut("K","#7cb342","Potassium","soil test","needs test",null)
-    +nut("C","#880e4f","Org. carbon","5–15",oc==null?"–":oc.toFixed(1)+" g/kg",oc==null?null:oc/20*100);
-  const lv=N==null?null:N<0.5?0:N<1?1:N<1.5?2:N<2.5?3:4;
-  $("kit").innerHTML=tube("N Test Nitrogen","#f8bbd0",lv)+tube("P Test Phosphorus","#bbdefb",null)+tube("K Test Potash","#ffcc80",null);
-
-  // Page 4: crops
-  const avgT=d.temperature_2m_mean.reduce((a,b)=>a+b,0)/d.temperature_2m_mean.length;
-  const rain=d.precipitation_sum.reduce((a,b)=>a+b,0),se=season();
-  $("summary").innerHTML="Avg temp "+avgT.toFixed(1)+" °C · 7-day rain "+rain.toFixed(1)+" mm · Season: "+se+(s?" · Soil: "+s.tex:"");
-  $("crops").innerHTML=score(avgT,rain,se,s).slice(0,3).map(r=>{
-    const f=r.c.f,ac=0.4047,dap=f[1]*ac/0.46,urea=Math.max(0,f[0]*ac-0.18*dap)/0.46,mop=f[2]*ac/0.6;
-    return '<li data-en="'+r.c.n+'" data-kn="'+r.c.kn+'"><div class="grow"><b style="font-size:18px">'+(EMO[r.c.n]||"🌱")+' '+r.c.n+' ('+r.c.kn+')</b> – '+r.pct+'% match<div class="gbar"><span class="cur">Sowing</span><span>Growth</span><span>Flowering</span><span>Harvest</span></div><small>Ready in about '+(DAYS[r.c.n]||"–")+' days</small></div><small><b>Fertilizer per acre:</b> Urea '+Math.round(urea)+' kg · DAP '+Math.round(dap)+' kg · MOP '+Math.round(mop)+' kg<br>(N:P₂O₅:K₂O = '+f.join(":")+' kg/ha)</small></li>';
-  }).join("");
-}
-
-
-async function runForLocation(lat,lon,label){
-  $("result").innerHTML=label+"<br>Loading weather and soil...";
+async function getSoil(lat,lon){
+  S.soil="loam";S.soilAuto=false;
   try{
-    if(map){map.setView([lat,lon],Math.max(map.getZoom(),12));if(marker)map.removeLayer(marker);marker=L.marker([lat,lon]).addTo(map);}
+    const c=new AbortController();setTimeout(()=>c.abort(),8000);
+    const u=`https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&property=clay&property=sand&depth=0-5cm&value=mean`;
+    const d=await (await fetch(u,{signal:c.signal})).json();
+    const v={};d.properties.layers.forEach(l=>v[l.name]=l.depths[0].values.mean/10);
+    S.clayPct=v.clay;S.sandPct=v.sand;
+    S.soil=v.clay>=35?"clay":(v.sand>=55?"sandy":"loam");S.soilAuto=true;
   }catch(e){}
-  try{
-    const res=await Promise.all([getWeather(lat,lon),fetchSoil(lat,lon)]);
-    render(res[0],res[1]);
-    $("result").innerHTML=label+"<br>Lat "+lat.toFixed(4)+", Lon "+lon.toFixed(4);
-    show(2);
-  }catch(e){
-    $("result").textContent="Could not load data: "+e.message;
+}
+function season(){
+  const m=new Date().getMonth()+1;
+  return m>=6&&m<=9?"kharif":(m>=10||m<=2?"rabi":"summer");
+}
+
+/* ===== Scoring: each crop gets a real score, so not everything shows 100% ===== */
+function fit(c){
+  let tf=1;
+  if(S.temp<c.t[0])tf=Math.max(0,1-(c.t[0]-S.temp)/8);
+  if(S.temp>c.t[1])tf=Math.max(0,1-(S.temp-c.t[1])/8);
+  const sf=c.soil.includes(S.soil)?1:.5;
+  const have=S.rain<10?0:(S.rain<40?1:2);
+  const wf=1-.3*Math.abs(have-c.w);
+  const inSeason=c.s.includes("all")||c.s.includes(S.season);
+  let score=(tf*.4+sf*.25+wf*.35)*(inSeason?1:.4);
+  if(c.plant&&(S.elev<c.elev[0]||S.elev>c.elev[1]))score*=.4;
+  return Math.round(score*100);
+}
+function perAcre(c){
+  const [N,P,K]=c.npk;
+  if(c.perTree)return `Per tree per year: Urea ${(N/.46).toFixed(1)} kg · DAP ${(P/.46).toFixed(1)} kg · MOP ${(K/.6).toFixed(1)} kg`;
+  const dap=P/.46, urea=Math.max(0,(N-dap*.18)/.46), mop=K/.6;
+  const a=x=>Math.round(x/2.471);
+  return `Fertilizer per acre: Urea ${a(urea)} kg · DAP ${a(dap)} kg · MOP ${a(mop)} kg (N:P₂O₅:K₂O = ${N}:${P}:${K} kg/ha)`;
+}
+
+/* ===== Render ===== */
+const stat=(v,l)=>`<div class="stat"><b>${v}</b>${l}</div>`;
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+function renderPages(){
+  $("place").textContent="📍 "+S.place;
+  $("wstats").innerHTML=stat(S.temp.toFixed(1)+" °C","Avg temperature")+stat(S.rain.toFixed(1)+" mm","Rain, next 7 days")+stat(Math.round(S.elev)+" m","Altitude");
+  $("sstats").innerHTML=stat(cap(S.soil),"Soil")+stat(cap(S.season),"Season");
+  $("soilnote").textContent=S.soilAuto?`Soil is estimated from satellite soil maps (clay ${Math.round(S.clayPct)}%, sand ${Math.round(S.sandPct)}%).`:"Soil data was not available, so loam is assumed.";
+  buildCrops();
+}
+function card(c,pct,cls){
+  const days=c.d?`Ready in about ${c.d} days`:"Perennial crop (grows for many years)";
+  const stages=c.plant?"":`<div class="stages"><span>Sowing</span><span>Growth</span><span>Flowering</span><span>Harvest</span></div>`;
+  return `<div class="crop ${cls||""}"><h3>${c.e} ${c.id} (${c.kn}) – ${pct}% match</h3>${stages}<div>${days}</div>${c.note?`<div class="fert">${c.note}</div>`:""}</div><p class="fert"><b>${perAcre(c)}</b></p>`;
+}
+function buildCrops(){
+  $("line").textContent=`Avg temp ${S.temp.toFixed(1)} °C · 7-day rain ${S.rain.toFixed(1)} mm · Season: ${S.season} · Soil: ${S.soil}`;
+  const names=LOCAL_CROPS[S.district]||[];
+  let html="";
+  if(names.length){
+    html+=`<div class="localbox"><b>🌿 Commonly grown in ${cap(S.district)}:</b><br>${names.join(" · ")}</div>`;
+    names.map(n=>CROPS.find(c=>c.id===n)).filter(Boolean).forEach(c=>{html+=card(c,fit(c),"local");});
+  }else if(S.elev>=700){
+    const hill=CROPS.filter(c=>c.plant&&S.elev>=c.elev[0]&&S.elev<=c.elev[1]).slice(0,2);
+    if(hill.length)html+=`<div class="localbox"><b>⛰️ High-altitude area (${Math.round(S.elev)} m). Plantation crops can grow here.</b></div>`+hill.map(c=>card(c,fit(c),"local")).join("");
   }
+  $("local").innerHTML=html;
+  const shown=new Set(names);
+  S.top=CROPS.filter(c=>!c.plant&&!shown.has(c.id)).map(c=>({c,p:fit(c)})).sort((a,b)=>b.p-a.p).slice(0,3);
+  $("results").innerHTML=`<h3 style="margin:16px 0 0">Best for this ${S.season} season</h3>`+S.top.map(x=>card(x.c,x.p)).join("");
 }
 
-function getLocation(){
-  const r=$("result");
-  if(!window.isSecureContext){r.textContent="Please open this website using HTTPS.";return;}
-  if(!navigator.geolocation){r.textContent="Location not supported. Type your place or tap the map.";return;}
-  r.textContent="Detecting your location... Please wait.";
-  navigator.geolocation.getCurrentPosition(
-    p=>runForLocation(p.coords.latitude,p.coords.longitude,"📍 GPS location"),
-    ()=>{r.textContent="Could not get GPS. Allow location, or type your place / tap the map.";},
-    {enableHighAccuracy:false,timeout:60000,maximumAge:60000});
-}
-
-async function searchPlace(){
-  const r=$("result"),typed=$("place").value.trim();
-  if(!typed){r.textContent="Please type a village, town or city name.";return;}
-  r.textContent="Searching for "+typed+"...";
-  const parts=typed.split(",").map(s=>s.trim()).filter(Boolean),first=parts[0];
-  const qs=[typed,first+", India"];
-  if(/u$/i.test(first)&&first.length>4)qs.push(first.slice(0,-1)+", India");
-  try{
-    let f=null;
-    for(let i=0;i<qs.length&&!f;i++){
-      if(i>0)await new Promise(x=>setTimeout(x,1100));
-      const res=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&countrycodes=in&q="+encodeURIComponent(qs[i]));
-      if(!res.ok)continue;
-      const d=await res.json();
-      if(d.length)f={lat:+d[0].lat,lon:+d[0].lon,label:d[0].display_name.split(",").slice(0,3).join(",")};
-    }
-    if(!f){r.textContent="Place not found. Search the nearest town, then tap your village on the map.";return;}
-    await runForLocation(f.lat,f.lon,"📍 "+f.label);
-  }catch(e){r.textContent="Search error: "+e.message;}
-}
-$("place").addEventListener("keydown",e=>{if(e.key==="Enter")searchPlace();});
-
+/* ===== Voice ===== */
 function speak(lang){
-  const items=document.querySelectorAll("#crops li");
-  if(!items.length){alert("Please find your location first.");return;}
-  const names=[...items].map(li=>lang==="kn"?li.dataset.kn:li.dataset.en).join(", ");
-  const msg=lang==="kn"
-    ?"ನಮಸ್ಕಾರ ರೈತ ಮಿತ್ರರೇ. ನಿಮ್ಮ ಪ್ರದೇಶಕ್ಕೆ ಶಿಫಾರಸು ಮಾಡಲಾದ ಬೆಳೆಗಳು: "+names+". ಕೃಷಿ ಮಾಡುವ ಮೊದಲು ಸ್ಥಳೀಯ ಕೃಷಿ ತಜ್ಞರ ಸಲಹೆ ಪಡೆಯಿರಿ."
-    :"Hello farmer. The recommended crops for your area are: "+names+". Please consult a local agricultural expert before planting.";
-  if(!("speechSynthesis" in window)){alert("Voice is not supported in this browser.");return;}
-  const code=lang==="kn"?"kn-IN":"en-IN",vs=speechSynthesis.getVoices();
-  const v=vs.find(x=>x.lang.replace("_","-").toLowerCase()===code.toLowerCase())||vs.find(x=>x.lang.toLowerCase().startsWith(lang));
-  if(lang==="kn"&&!v){alert("Kannada voice is not installed. Install Kannada text-to-speech in your phone settings.");return;}
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(msg);u.lang=code;if(v)u.voice=v;u.rate=0.9;
-  speechSynthesis.speak(u);
+  const names=LOCAL_CROPS[S.district]||[];
+  const list=S.top.map(x=>lang==="kn"?x.c.kn:x.c.id);
+  const text=lang==="kn"
+    ?`ನಿಮ್ಮ ಜಮೀನಿಗೆ ಸೂಕ್ತ ಬೆಳೆಗಳು: ${list.join(", ")}. ಮಣ್ಣು: ${SOILKN[S.soil]}. ರಸಗೊಬ್ಬರ ಬಳಸುವ ಮೊದಲು ಹತ್ತಿರದ ಕೃಷಿ ವಿಜ್ಞಾನ ಕೇಂದ್ರವನ್ನು ಸಂಪರ್ಕಿಸಿ.`
+    :(names.length?`Commonly grown here: ${names.join(", ")}. `:"")+`Best crops for this ${S.season} season: ${list.join(", ")}. Soil is ${S.soil}. Confirm fertilizer doses with your local Krishi Vigyan Kendra.`;
+  const u=new SpeechSynthesisUtterance(text);u.lang=lang==="kn"?"kn-IN":"en-IN";speechSynthesis.speak(u);
 }
-if("speechSynthesis" in window)speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();
-
-try{
-  if(typeof L==="undefined")throw new Error("no map library");
-  map=L.map("map").setView([15.3,75.7],6);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
-  map.on("click",e=>runForLocation(e.latlng.lat,e.latlng.lng,"📍 Selected on map"));
-}catch(err){
-  $("map").innerHTML="<p style='padding:20px'>Map could not load. Use GPS or search instead.</p>";
-}
+$("vEn").onclick=()=>speak("en");
+$("vKn").onclick=()=>speak("kn");
+$("again").onclick=()=>{speechSynthesis.cancel();$("msg1").textContent="Or tap on the map to choose your farm.";go(1);};
 </script>
 </body>
 </html>
