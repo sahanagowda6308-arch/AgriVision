@@ -320,14 +320,14 @@ function buildCrops(){
           top.map(t=>`<div class="crop"><h3>${cap(t.crop)} – ${t.score}% match</h3></div>`).join("")+
           `<p class="note">These come from a model trained on a general India crop dataset. Confirm with your KVK.</p>`;
       })
-      .catch(()=>{$("results").innerHTML=rulesHTML+`<p class="note">Trained model file (crop_model.json) not found, so rule-based results are shown.</p>`;});
+      .catch(err=>{$("results").innerHTML=rulesHTML+`<p class="note">Trained model could not be used (${err.message}). Rule-based results are shown.</p>`;});
   }
 }
 
 /* ===== Trained model (reads crop_model.json) ===== */
 let CROP_MODEL=null;
 async function predictCrops(input){
-  if(!CROP_MODEL){const r=await fetch("crop_model.json");if(!r.ok)throw new Error("no model");CROP_MODEL=await r.json();}
+  if(!CROP_MODEL){const r=await fetch("crop_model.json?v="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("file not found (error "+r.status+")");CROP_MODEL=await r.json();}
   const m=CROP_MODEL,row=m.features.map(f=>Number(input[f])),total=new Array(m.classes.length).fill(0);
   for(const tr of m.trees){let n=0;while(tr.l[n]!==-1){n=row[tr.f[n]]<=tr.t[n]?tr.l[n]:tr.r[n];}tr.v[n].forEach((p,i)=>total[i]+=p);}
   return total.map((s,i)=>({crop:m.classes[i],score:Math.round(s/m.trees.length*100)})).sort((a,b)=>b.score-a.score).slice(0,3);
