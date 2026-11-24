@@ -76,7 +76,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent2);outlin
   <h2>3. Soil and season</h2>
   <div class="row" id="sstats"></div>
   <p class="msg" id="soilnote"></p>
-  <p style="margin:10px 0 4px"><b>Soil Health Card values (optional, gives better crops)</b></p>
+  <p style="margin:10px 0 2px"><b>Soil nutrients (estimated from your location)</b></p><p class="msg" id="npknote"></p>
   <div class="row">
     <input type="text" id="iN" placeholder="N (nitrogen)" inputmode="numeric">
     <input type="text" id="iP" placeholder="P (phosphorus)" inputmode="numeric">
@@ -217,15 +217,25 @@ async function getWeather(lat,lon){
   S.elev=d.elevation;
 }
 async function getSoil(lat,lon){
-  S.soil="loam";S.soilAuto=false;
+  S.soil="loam";S.soilAuto=false;S.totN=null;S.phVal=null;
   try{
     const c=new AbortController();setTimeout(()=>c.abort(),8000);
-    const u=`https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&property=clay&property=sand&depth=0-5cm&value=mean`;
+    const u=`https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&property=clay&property=sand&property=nitrogen&property=phh2o&depth=0-5cm&value=mean`;
     const d=await (await fetch(u,{signal:c.signal})).json();
     const v={};d.properties.layers.forEach(l=>v[l.name]=l.depths[0].values.mean/10);
-    S.clayPct=v.clay;S.sandPct=v.sand;
+    S.clayPct=v.clay;S.sandPct=v.sand;S.totN=v.nitrogen/10;S.phVal=v.phh2o;
     S.soil=v.clay>=35?"clay":(v.sand>=55?"sandy":"loam");S.soilAuto=true;
   }catch(e){}
+}
+/* Estimate N, P, K, pH from location. pH and N come from satellite soil maps.
+   P and K are NOT measurable from space: they are rough typical values for the soil type. */
+function estimateNPK(){
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const N=S.totN!=null?clamp(Math.round(S.totN*50),20,140):50;
+  const P={clay:50,loam:45,sandy:35}[S.soil]||45;
+  const K={clay:60,loam:45,sandy:30}[S.soil]||45;
+  const ph=S.phVal!=null?clamp(Math.round(S.phVal*10)/10,4.5,8.5):6.5;
+  return {N,P,K,ph};
 }
 function season(){
   const m=new Date().getMonth()+1;
@@ -261,7 +271,18 @@ function renderPages(){
   $("wstats").innerHTML=stat(S.temp.toFixed(1)+" °C","Avg temperature")+stat(S.rain.toFixed(1)+" mm","Rain, next 7 days")+stat(Math.round(S.elev)+" m","Altitude");
   $("sstats").innerHTML=stat(cap(S.soil),"Soil")+stat(cap(S.season),"Season");
   $("soilnote").textContent=S.soilAuto?`Soil is estimated from satellite soil maps (clay ${Math.round(S.clayPct)}%, sand ${Math.round(S.sandPct)}%).`:"Soil data was not available, so loam is assumed.";
+  fillNPK();
   buildCrops();
+}
+let npkTouched=false;
+["iN","iP","iK","iPH"].forEach(id=>$(id).addEventListener("input",()=>{npkTouched=true;$("npknote").textContent="You changed the values. Using your numbers.";}));
+function fillNPK(){
+  if(npkTouched)return;
+  const e=estimateNPK();
+  $("iN").value=e.N;$("iP").value=e.P;$("iK").value=e.K;$("iPH").value=e.ph;
+  $("npknote").textContent=S.soilAuto
+    ?"N and pH come from satellite soil maps. P and K are typical values for this soil type, not measured. Change them if you have a Soil Health Card."
+    :"Satellite soil data was not available, so general average values are shown. Change them if you have a Soil Health Card.";
 }
 function card(c,pct,cls){
   const days=c.d?`Ready in about ${c.d} days`:"Perennial crop (grows for many years)";
