@@ -76,13 +76,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent2);outlin
   <h2>3. Soil and season</h2>
   <div class="row" id="sstats"></div>
   <p class="msg" id="soilnote"></p>
-  <p style="margin:10px 0 2px"><b>Soil nutrients (estimated from your location)</b></p><p class="msg" id="npknote"></p>
+  <p style="margin:10px 0 2px"><b>Soil nutrients (found automatically from your location)</b></p>
+  <div class="row" id="npkstats"></div>
+  <p class="msg" id="npknote"></p>
+  <details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent)">I have a Soil Health Card (optional)</summary>
   <div class="row">
     <input type="text" id="iN" placeholder="N (nitrogen)" inputmode="numeric">
     <input type="text" id="iP" placeholder="P (phosphorus)" inputmode="numeric">
     <input type="text" id="iK" placeholder="K (potassium)" inputmode="numeric">
     <input type="text" id="iPH" placeholder="pH" inputmode="decimal">
   </div>
+  </details>
   <button class="alt" data-go="2">◄ Back</button><button id="showCrops">Show crops</button>
 </section>
 
@@ -275,11 +279,12 @@ function renderPages(){
   buildCrops();
 }
 let npkTouched=false;
-["iN","iP","iK","iPH"].forEach(id=>$(id).addEventListener("input",()=>{npkTouched=true;$("npknote").textContent="You changed the values. Using your numbers.";}));
+["iN","iP","iK","iPH"].forEach(id=>$(id).addEventListener("input",()=>{npkTouched=true;$("npknote").textContent="Using the values you entered.";}));
 function fillNPK(){
   if(npkTouched)return;
   const e=estimateNPK();
   $("iN").value=e.N;$("iP").value=e.P;$("iK").value=e.K;$("iPH").value=e.ph;
+  $("npkstats").innerHTML=stat(e.N,"Nitrogen (N)")+stat(e.P,"Phosphorus (P)")+stat(e.K,"Potassium (K)")+stat(e.ph,"pH");
   $("npknote").textContent=S.soilAuto
     ?"N and pH come from satellite soil maps. P and K are typical values for this soil type, not measured. Change them if you have a Soil Health Card."
     :"Satellite soil data was not available, so general average values are shown. Change them if you have a Soil Health Card.";
